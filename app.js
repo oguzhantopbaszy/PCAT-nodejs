@@ -1,6 +1,7 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const fileUpload = require('express-fileupload')
+const methodOverride = require('method-override') //Tarayacımız PUT ve DELETE işlemlerini desteklemediğinden yardım aldığımız modül. Uygulamada aslında yapabiliyoruz ama bu işlemleri tarayıcı desteklemediği için bu modeül sayesinde tarayıcı tarafında PUT işlemini POST işlemi gibi simüle edebiliyoruz.
 
 const ejs = require('ejs')
 const path = require('path')
@@ -19,10 +20,11 @@ mongoose.connect('mongodb://localhost/pcat-test-db', {
 app.set("view engine", "ejs");
 
 //Middlewares
-app.use(express.static('public'));
+app.use(express.static('public'))
 app.use(express.urlencoded({extended:true}))
 app.use(express.json())
-app.use(fileUpload());
+app.use(fileUpload())
+app.use(methodOverride('_method'))
 
 //Routes
 app.get('/', async (req, res) => {
@@ -74,7 +76,24 @@ app.get('/photos/:id', async (req, res) => {
   })
 })
 
+app.get('/photos/edit/:id', async (req,res) => {
+  const photo = await Photo.findOne({_id: req.params.id}) //burda linkteki id ile databasedeki id'nin eşleşmesini karşılaştırdık.
+  res.render('edit', {
+    photo
+  })
+})
+
+app.put('/photos/:id', async (req,res) => {
+  const photo = await Photo.findOne({_id: req.params.id})
+  photo.title = req.body.title
+  photo.description = req.body.description
+  await photo.save()
+
+  res.redirect(`/photos/${req.params.id}`)
+
+})
+
 const port = 3000;
 app.listen(port, () => {
-  console.log(`Sunucu ${port} portunda başlatıldı...`)
+  console.log(`Sunucu ${port} portunda başlatildi...`)
 })
